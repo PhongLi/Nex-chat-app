@@ -12,7 +12,7 @@ import { doc, getDoc, onSnapshot, updateDoc } from 'firebase/firestore'
 import { db } from '../../config/firebase'
 import { useUserStore } from '../../store/userStore'
 import { useChatStore } from '../../store/chatStore'
-import { Chat, User } from '../../types'
+import { IChat, User } from '../../types'
 
 const StyledContainer = styled(Box)(() => ({
   minWidth: 350,
@@ -35,7 +35,7 @@ function ChatList() {
   const { currentUser } = useUserStore()
   const { changeChat } = useChatStore()
 
-  const [chats, setChats] = useState<Chat[]>([])
+  const [chats, setChats] = useState<IChat[]>([])
   const [input, setInput] = useState('')
 
   useEffect(() => {
@@ -45,7 +45,7 @@ function ChatList() {
       doc(db, 'userchats', currentUser?.id),
       async res => {
         const items = res?.data()?.chats
-        const promises = items.map(async item => {
+        const promises = items.map(async (item: IChat) => {
           const userDocRef = doc(db, 'users', item.receiverId)
           const userDocSnap = await getDoc(userDocRef)
           const user = userDocSnap.data() as User
@@ -63,7 +63,7 @@ function ChatList() {
     }
   }, [currentUser?.id])
 
-  const handleSelect = async (chat: Chat) => {
+  const handleSelect = async (chat: IChat) => {
     const userChats = chats.map(item => {
       const { user, ...rest } = item
       return rest

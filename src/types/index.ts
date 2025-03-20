@@ -5,7 +5,7 @@ export interface User {
   id: string
 }
 
-export interface Chat {
+export interface IChat {
   chatId: string
   receiverId: string
   lastMessage: string
@@ -13,4 +13,8 @@ export interface Chat {
   isSeen: boolean
   unreadCount: number
   user: User
+}
+
+export interface UserChats {
+  chats: IChat[]
 }

@@ -1,11 +1,11 @@
-import { useState } from 'react'
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react'
+import { useState } from 'react'
 
 // **MUI
-import { IconButton, InputBase, Popover, Stack } from '@mui/material'
 import AttachFileIcon from '@mui/icons-material/AttachFile'
 import SentimentSatisfiedOutlinedIcon from '@mui/icons-material/SentimentSatisfiedOutlined'
 import TelegramIcon from '@mui/icons-material/Telegram'
+import { IconButton, InputBase, Popover, Stack } from '@mui/material'
 import { styled } from '@mui/material/styles'
 
 // **firebase
@@ -13,6 +13,7 @@ import { arrayUnion, doc, getDoc, updateDoc } from 'firebase/firestore'
 import { db } from '../../config/firebase'
 import { useChatStore } from '../../store/chatStore'
 import { useUserStore } from '../../store/userStore'
+import { UserChats } from '../../types'
 
 const StyledChatInputContainer = styled(Stack)(({ theme }) => ({
   flexDirection: 'row',
@@ -44,15 +45,6 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
   },
 }))
 
-interface UserChats {
-  chats: {
-    chatId: string
-    lastMessage: string
-    unreadCount?: number
-    updatedAt: number
-  }[]
-}
-
 export const ChatInput = () => {
   const [text, setText] = useState('')
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
@@ -83,25 +75,23 @@ export const ChatInput = () => {
     if (!userChatsSnapshot.exists()) return
     const userChatsData = userChatsSnapshot.data() as UserChats
 
-    // Tìm index của cuộc trò chuyện
     const chatIndex = userChatsData.chats.findIndex(c => c.chatId === chatId)
     if (chatIndex === -1) return
 
     userChatsData.chats[chatIndex].lastMessage = message
     userChatsData.chats[chatIndex].updatedAt = Date.now()
 
-    // Nếu userId không phải người gửi -> tăng unreadCount
     if (userId !== senderId) {
       userChatsData.chats[chatIndex].unreadCount =
         (userChatsData.chats[chatIndex].unreadCount || 0) + 1
     }
 
-    // Lưu lại
     await updateDoc(userChatsRef, { chats: userChatsData.chats })
   }
 
   const handleSend = async () => {
-    if (text.trim() === '' || !chatId) return
+    const message = text.trim()
+    if (message === '' || !chatId) return
     if (!currentUser?.id || !user?.id) return
 
     try {
@@ -109,13 +99,13 @@ export const ChatInput = () => {
       await updateDoc(doc(db, 'chats', chatId), {
         messages: arrayUnion({
           senderId: currentUser.id,
-          text,
+          text: message,
           createdAt: new Date(),
         }),
       })
 
-      await updateUserChats(currentUser.id, chatId, text, currentUser.id)
-      await updateUserChats(user.id, chatId, text, currentUser.id)
+      await updateUserChats(currentUser.id, chatId, message, currentUser.id)
+      await updateUserChats(user.id, chatId, message, currentUser.id)
     } catch (err) {
       console.log(err)
     } finally {
